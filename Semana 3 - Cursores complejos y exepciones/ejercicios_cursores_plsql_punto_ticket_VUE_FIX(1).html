@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ejercicios — Cursores PL/SQL · Clon Punto Ticket</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/plsql.min.js"></script>
+<style>
+:root{
+ --ink:#17171a;--muted:#62636a;--line:#dedee5;--lav:#e9e2ff;--blue:#dceeff;
+ --mint:#ddf5e9;--peach:#ffe7d6;--yellow:#fff4bf;--pink:#ffe0eb;
+}
+*{box-sizing:border-box}
+html,body,#app{margin:0;width:100%;height:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:#fff;overflow:hidden}
+.presentation{height:100%;position:relative}
+.slide{position:absolute;inset:0;padding:44px 70px 74px;display:none;overflow:auto;background:#fff}
+.slide.active{display:block}
+.inner{max-width:1450px;margin:auto}
+.kicker{text-transform:uppercase;letter-spacing:.08em;font-size:18px;font-weight:900;color:#686771;margin-bottom:12px}
+h1{font-size:clamp(48px,5.5vw,82px);line-height:1.02;letter-spacing:-.045em;margin:0 0 22px;font-weight:950}
+h2{font-size:clamp(38px,4.2vw,62px);line-height:1.05;letter-spacing:-.035em;margin:0 0 24px;font-weight:950}
+h3{font-size:28px;margin:0 0 10px}
+p,li{font-size:24px;line-height:1.4}
+.small{font-size:18px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{border:1px solid var(--line);border-radius:24px;padding:25px;background:#fff;box-shadow:0 8px 22px rgba(0,0,0,.045)}
+.lav{background:var(--lav)}.blue{background:var(--blue)}.mint{background:var(--mint)}
+.peach{background:var(--peach)}.yellow{background:var(--yellow)}.pink{background:var(--pink)}
+.hero{min-height:76vh;display:flex;align-items:center;justify-content:center}
+.hero-card{max-width:1050px;padding:55px;border:1px solid var(--line);border-radius:34px;box-shadow:0 15px 38px rgba(30,25,50,.08);background:#fff}
+.badges{display:flex;gap:10px;flex-wrap:wrap}.badge{padding:9px 16px;border-radius:999px;font-weight:850;font-size:17px;border:1px solid rgba(0,0,0,.06)}
+.code{border:1px solid #d4d4da;border-radius:20px;overflow:hidden;background:#f8f9fb;box-shadow:0 8px 22px rgba(0,0,0,.06)}
+.codehead{padding:10px 17px;background:#ececf1;border-bottom:1px solid #d8d8de;font-weight:900;font-size:15px;display:flex;justify-content:space-between}
+pre{margin:0!important;padding:20px!important;overflow:auto!important;font-size:18px!important;line-height:1.45!important;max-height:57vh}
+code{font-family:"JetBrains Mono","SFMono-Regular",Consolas,monospace}
+.narrative{font-size:29px;line-height:1.35;font-weight:800;padding:28px 32px;border-radius:25px;background:#faf8ff;border-left:8px solid #b8a7e8;margin-bottom:20px}
+.task{padding:20px 25px;border-radius:20px;background:var(--blue);border:1px solid #c6dff2}
+.task p{margin:5px 0;font-size:22px}
+.answer{margin-top:18px;padding:20px;border-radius:18px;background:var(--mint);border:1px solid #c7e8d8}
+.answer summary{font-size:23px;font-weight:900;cursor:pointer}
+.answer pre{margin-top:12px!important;background:#fff;border-radius:12px;font-size:16px!important;max-height:43vh}
+.badge-level{display:inline-block;padding:7px 13px;border-radius:999px;font-size:15px;font-weight:900;margin-bottom:10px}
+.footer{position:fixed;left:0;right:0;bottom:0;height:52px;background:rgba(255,255,255,.95);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-weight:800;font-size:15px;z-index:10}
+.controls{display:flex;gap:8px;align-items:center}
+button{border:1px solid #cccdd4;background:#fff;border-radius:11px;padding:7px 12px;font-size:15px;font-weight:900;cursor:pointer}
+.progressbar{position:fixed;top:0;left:0;right:0;height:6px;background:#eee;z-index:20}
+.progress{height:100%;background:#b8a7e8}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:25px}
+.checklist{padding-left:25px}
+.checklist li{margin:9px 0}
+.quote{font-size:34px;font-weight:900;line-height:1.25;padding:28px;background:#fcfbff;border-radius:24px}
+.reveal{animation:fade .25s ease}
+@keyframes fade{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:900px){
+ .slide{padding:30px 25px 75px}.grid,.grid3,.two{grid-template-columns:1fr}
+ p,li{font-size:20px}h1{font-size:45px}h2{font-size:39px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="progressbar"><div class="progress" :style="{width:progress+'%'}"></div></div>
+<div class="presentation" tabindex="0">
+
+<section v-for="(s,i) in slides" :key="i" class="slide" :class="{active:i===current}">
+<div class="inner reveal">
+
+<template v-if="s.type==='title'">
+<div class="hero"><div class="hero-card">
+<div class="kicker">BDY1103 · PL/SQL · Clon Punto Ticket</div>
+<h1>Desafíos con<br>cursores</h1>
+<p style="font-size:31px">12 ejercicios progresivos: <b>2 por cada nivel</b>, desde un cursor sencillo hasta cursores anidados.</p>
+<div class="badges">
+<span class="badge lav">Nivel 1 · Básico</span><span class="badge blue">Nivel 2 · WHERE</span>
+<span class="badge mint">Nivel 3 · JOIN</span><span class="badge peach">Nivel 4 · Parámetros</span>
+<span class="badge yellow">Nivel 5 · JOIN + parámetros</span><span class="badge pink">Nivel 6 · Anidados</span>
+</div>
+<p class="small">Navegación: ← → · pantalla completa: F · Las soluciones están al final.</p>
+</div></div>
+</template>
+
+<template v-if="s.type==='rules'">
+<div class="kicker">Antes de comenzar</div><h2>¿Cómo resolveremos?</h2>
+<div class="grid3">
+<div class="card lav"><h3>1. Lee la historia</h3><p>Identifica qué necesita el usuario del sistema.</p></div>
+<div class="card blue"><h3>2. Traduce a SQL</h3><p>Piensa primero en el <b>SELECT</b> que necesitas.</p></div>
+<div class="card mint"><h3>3. Agrega el cursor</h3><p>Recién después transforma el SELECT en un cursor.</p></div>
+<div class="card peach"><h3>4. Recorre</h3><p>Usa <b>FOR registro IN cursor LOOP</b>.</p></div>
+<div class="card yellow"><h3>5. Muestra</h3><p>Utiliza <b>DBMS_OUTPUT.PUT_LINE</b> para comprobar.</p></div>
+<div class="card pink"><h3>6. No mires aún</h3><p>Las soluciones están al final de la presentación.</p></div>
+</div>
+<div class="quote" style="margin-top:24px">“Primero entiendo el problema → después construyo el SELECT → finalmente lo convierto en PL/SQL.”</div>
+</template>
+
+<!-- NIVEL 1 -->
+<template v-if="s.type==='ex' && s.n===1">
+<div class="kicker">Nivel 1 · Cursor sencillo · Ejercicio 1</div><h2>Listado de clientes</h2>
+<div class="narrative">“Como encargado de atención al cliente, quiero obtener un listado de todos los clientes registrados para poder revisar rápidamente quiénes forman parte de la plataforma.”</div>
+<div class="task"><p><b>Tu misión:</b> crea un cursor que recorra todos los registros de <code>CLIENTE</code> y muestre por pantalla el ID, nombre, apellido y email.</p><p><b>Debe usar:</b> cursor explícito + FOR LOOP.</p></div>
+</template>
+
+<template v-if="s.type==='ex' && s.n===2">
+<div class="kicker">Nivel 1 · Cursor sencillo · Ejercicio 2</div><h2>Catálogo de eventos</h2>
+<div class="narrative">“Como administrador de la plataforma, quiero revisar todos los eventos disponibles para obtener una visión rápida del catálogo publicado.”</div>
+<div class="task"><p><b>Tu misión:</b> crea un cursor sobre <code>EVENTO</code> y muestra el ID, nombre, fecha, hora y estado de cada evento.</p><p><b>Debe usar:</b> cursor explícito + FOR LOOP. No uses JOIN.</p></div>
+</template>
+
+<!-- NIVEL 2 -->
+<template v-if="s.type==='ex' && s.n===3">
+<div class="kicker">Nivel 2 · Cursor + WHERE · Ejercicio 3</div><h2>Clientes activos</h2>
+<div class="narrative">“Como analista de soporte, necesito identificar únicamente a los clientes que actualmente tienen estado ACTIVO para enviarles una comunicación de servicio.”</div>
+<div class="task"><p><b>Tu misión:</b> crea un cursor sobre <code>CLIENTE</code> filtrando por <code>ESTADO = 'ACTIVO'</code>. Muestra nombre, apellido y email.</p></div>
+</template>
+
+<template v-if="s.type==='ex' && s.n===4">
+<div class="kicker">Nivel 2 · Cursor + WHERE · Ejercicio 4</div><h2>Pagos aprobados</h2>
+<div class="narrative">“Como encargado de conciliación, quiero revisar las transacciones que fueron aprobadas para confirmar qué pagos pueden continuar con el proceso de emisión.”</div>
+<div class="task"><p><b>Tu misión:</b> crea un cursor sobre <code>TRANSACCION_PAGO</code> que recupere solo las transacciones con <code>ESTADO = 'APROBADO'</code>. Muestra ID, monto final y método de pago.</p></div>
+</template>
+
+<!-- NIVEL 3 -->
+<template v-if="s.type==='ex' && s.n===5">
+<div class="kicker">Nivel 3 · Cursor + JOIN · Ejercicio 5</div><h2>¿Quién realizó cada compra?</h2>
+<div class="narrative">“Como analista de ventas, quiero conocer el nombre del cliente asociado a cada pago aprobado para poder generar un reporte comprensible para el equipo comercial.”</div>
+<div class="task"><p><b>Tu misión:</b> une <code>CLIENTE</code>, <code>RESERVA_TEMPORAL</code> y <code>TRANSACCION_PAGO</code>. Muestra cliente, ID de transacción y monto final.</p><p><b>Filtro:</b> solo pagos APROBADOS.</p></div>
+</template>
+
+<template v-if="s.type==='ex' && s.n===6">
+<div class="kicker">Nivel 3 · Cursor + JOIN · Ejercicio 6</div><h2>Compras por evento</h2>
+<div class="narrative">“Como encargado de producción, quiero saber qué clientes realizaron compras para cada evento y cuánto pagaron, para revisar la demanda de cada espectáculo.”</div>
+<div class="task"><p><b>Tu misión:</b> conecta <code>CLIENTE → RESERVA_TEMPORAL → LOCALIDAD_EVENTO → EVENTO → TRANSACCION_PAGO</code>.</p><p>Muestra cliente, evento, monto final y método de pago. Considera solo pagos aprobados.</p></div>
+</template>
+
+<!-- NIVEL 4 -->
+<template v-if="s.type==='ex' && s.n===7">
+<div class="kicker">Nivel 4 · Cursor parametrizado · Ejercicio 7</div><h2>Buscar clientes por estado</h2>
+<div class="narrative">“Como desarrollador del sistema, quiero reutilizar una misma consulta para listar clientes activos o inactivos sin tener que escribir un cursor nuevo cada vez.”</div>
+<div class="task"><p><b>Tu misión:</b> crea <code>c_clientes_por_estado(p_estado VARCHAR2)</code>. El cursor debe devolver clientes según el estado recibido como parámetro.</p><p>Prueba al menos con <code>'ACTIVO'</code> e <code>'INACTIVO'</code>.</p></div>
+</template>
+
+<template v-if="s.type==='ex' && s.n===8">
+<div class="kicker">Nivel 4 · Cursor parametrizado · Ejercicio 8</div><h2>Eventos por estado</h2>
+<div class="narrative">“Como administrador del catálogo, quiero consultar los eventos según su estado, por ejemplo para revisar eventos ACTIVOS o FINALIZADOS utilizando la misma lógica.”</div>
+<div class="task"><p><b>Tu misión:</b> crea <code>c_eventos_por_estado(p_estado VARCHAR2)</code> y muestra nombre, fecha y hora.</p><p>El valor debe entregarse al invocar el cursor.</p></div>
+</template>
+
+<!-- NIVEL 5 -->
+<template v-if="s.type==='ex' && s.n===9">
+<div class="kicker">Nivel 5 · JOIN + parámetro · Ejercicio 9</div><h2>Compras de un cliente</h2>
+<div class="narrative">“Como agente de soporte, quiero ingresar el ID de un cliente y obtener todas sus compras aprobadas para poder responder a una consulta sobre su historial.”</div>
+<div class="task"><p><b>Tu misión:</b> crea un cursor <code>c_compras_cliente(p_cliente_id NUMBER)</code>.</p><p>Debe unir <code>CLIENTE</code>, <code>RESERVA_TEMPORAL</code> y <code>TRANSACCION_PAGO</code>, filtrando por cliente y por pago APROBADO.</p></div>
+</template>
+
+<template v-if="s.type==='ex' && s.n===10">
+<div class="kicker">Nivel 5 · JOIN + parámetro · Ejercicio 10</div><h2>Entradas de un evento</h2>
+<div class="narrative">“Como encargado de producción, quiero indicar el ID de un evento y obtener las compras asociadas a ese evento para analizar quiénes han comprado entradas.”</div>
+<div class="task"><p><b>Tu misión:</b> crea <code>c_ventas_evento(p_evento_id NUMBER)</code>.</p><p>Conecta <code>EVENTO</code>, <code>LOCALIDAD_EVENTO</code>, <code>RESERVA_TEMPORAL</code>, <code>CLIENTE</code> y <code>TRANSACCION_PAGO</code>. Muestra cliente, evento, monto final y método de pago.</p></div>
+</template>
+
+<!-- NIVEL 6 -->
+<template v-if="s.type==='ex' && s.n===11">
+<div class="kicker">Nivel 6 · Cursores anidados · Ejercicio 11</div><h2>Clientes y sus compras</h2>
+<div class="narrative">“Como analista comercial, quiero recorrer todos los clientes y, debajo de cada cliente, mostrar sus compras aprobadas. Así puedo visualizar el historial agrupado por persona.”</div>
+<div class="task"><p><b>Tu misión:</b> utiliza un cursor externo para recorrer clientes y un cursor parametrizado interno para recorrer sus compras.</p><p>El segundo cursor debe recibir el <code>CLIENTE_ID</code> del registro actual.</p></div>
+</template>
+
+<template v-if="s.type==='ex' && s.n===12">
+<div class="kicker">Nivel 6 · Cursores anidados · Ejercicio 12</div><h2>Eventos y compradores</h2>
+<div class="narrative">“Como encargado de producción, quiero recorrer cada evento y, para cada uno, mostrar los clientes que tienen compras aprobadas asociadas a ese evento.”</div>
+<div class="task"><p><b>Tu misión:</b> cursor externo para <code>EVENTO</code>; cursor interno parametrizado por <code>EVENTO_ID</code>.</p><p>Muestra el nombre del evento y, debajo, cada cliente comprador y su monto final.</p></div>
+</template>
+
+<!-- RESUMEN -->
+<template v-if="s.type==='map'">
+<div class="kicker">Mapa de dificultad</div><h2>12 ejercicios · 6 niveles</h2>
+<div class="grid3">
+<div class="card lav"><h3>1 · Sencillo</h3><p>1–2: recorrer una tabla.</p></div>
+<div class="card blue"><h3>2 · WHERE</h3><p>3–4: filtrar filas.</p></div>
+<div class="card mint"><h3>3 · JOIN</h3><p>5–6: combinar tablas.</p></div>
+<div class="card peach"><h3>4 · Parámetros</h3><p>7–8: reutilizar el cursor.</p></div>
+<div class="card yellow"><h3>5 · JOIN + parámetro</h3><p>9–10: consultas reutilizables sobre relaciones.</p></div>
+<div class="card pink"><h3>6 · Anidados</h3><p>11–12: recorrer una jerarquía.</p></div>
+</div>
+<div class="quote" style="margin-top:24px">La dificultad aumenta porque agregamos una sola idea nueva cada vez.</div>
+</template>
+
+<!-- SOLUCIONES -->
+<template v-if="s.type==='solution'">
+<div class="kicker">Solución · Ejercicio {{s.n}}</div><h2>{{s.title}}</h2>
+<div class="code">
+<div class="codehead"><span>respuesta de referencia</span><span>PL/SQL</span></div>
+<pre><code class="language-plsql">{{s.code}}</code></pre>
+</div>
+</template>
+
+<template v-if="s.type==='final'">
+<div class="hero"><div class="hero-card">
+<div class="kicker">Cierre</div><h2>¿Qué patrón ya puedes reconocer?</h2>
+<div class="quote">SELECT → CURSOR → FOR LOOP → registro → lógica</div>
+<p>Cuando aparezca un problema de procesamiento fila por fila, pregúntate: <b>¿qué conjunto de datos necesito recorrer?</b> Luego construye el SELECT y recién después el cursor.</p>
+<div class="badges"><span class="badge lav">JOIN</span><span class="badge blue">Parámetros</span><span class="badge mint">FOR LOOP</span><span class="badge peach">Anidación</span></div>
+</div></div>
+</template>
+
+</div>
+</section>
+
+<div class="footer">
+<span>Ejercicios de cursores · Clon Punto Ticket</span>
+<div class="controls">
+<button @click="prev">←</button><span>{{current+1}} / {{slides.length}}</span><button @click="next">→</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+const {createApp}=Vue;
+createApp({
+data(){
+const sols=[
+{n:1,title:'Listado de clientes',code:`DECLARE
+    CURSOR c_clientes IS
+        SELECT cliente_id, nombre, apellido, email
+        FROM CLIENTE;
+BEGIN
+    FOR cliente IN c_clientes LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            cliente.cliente_id || ' | ' ||
+            cliente.nombre || ' ' ||
+            cliente.apellido || ' | ' ||
+            cliente.email
+        );
+    END LOOP;
+END;
+/`},
+{n:2,title:'Catálogo de eventos',code:`DECLARE
+    CURSOR c_eventos IS
+        SELECT evento_id, nombre, fecha, hora, estado
+        FROM EVENTO;
+BEGIN
+    FOR evento IN c_eventos LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            evento.evento_id || ' | ' ||
+            evento.nombre || ' | ' ||
+            evento.fecha || ' | ' ||
+            evento.hora || ' | ' ||
+            evento.estado
+        );
+    END LOOP;
+END;
+/`},
+{n:3,title:'Clientes activos',code:`DECLARE
+    CURSOR c_clientes IS
+        SELECT cliente_id, nombre, apellido, email
+        FROM CLIENTE
+        WHERE estado = 'ACTIVO';
+BEGIN
+    FOR cliente IN c_clientes LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            cliente.nombre || ' ' ||
+            cliente.apellido || ' | ' ||
+            cliente.email
+        );
+    END LOOP;
+END;
+/`},
+{n:4,title:'Pagos aprobados',code:`DECLARE
+    CURSOR c_pagos IS
+        SELECT transaccion_id, monto_final, metodo_pago
+        FROM TRANSACCION_PAGO
+        WHERE estado = 'APROBADO';
+BEGIN
+    FOR pago IN c_pagos LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            pago.transaccion_id || ' | $' ||
+            pago.monto_final || ' | ' ||
+            pago.metodo_pago
+        );
+    END LOOP;
+END;
+/`},
+{n:5,title:'¿Quién realizó cada compra?',code:`DECLARE
+    CURSOR c_compras IS
+        SELECT
+            c.nombre || ' ' || c.apellido AS cliente,
+            tp.transaccion_id,
+            tp.monto_final
+        FROM CLIENTE c
+        JOIN RESERVA_TEMPORAL r
+            ON r.cliente_id = c.cliente_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE tp.estado = 'APROBADO';
+BEGIN
+    FOR compra IN c_compras LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            compra.cliente || ' | ' ||
+            compra.transaccion_id || ' | $' ||
+            compra.monto_final
+        );
+    END LOOP;
+END;
+/`},
+{n:6,title:'Compras por evento',code:`DECLARE
+    CURSOR c_compras IS
+        SELECT
+            c.nombre || ' ' || c.apellido AS cliente,
+            e.nombre AS evento,
+            tp.monto_final,
+            tp.metodo_pago
+        FROM CLIENTE c
+        JOIN RESERVA_TEMPORAL r
+            ON r.cliente_id = c.cliente_id
+        JOIN LOCALIDAD_EVENTO le
+            ON le.localidad_evento_id = r.localidad_evento_id
+        JOIN EVENTO e
+            ON e.evento_id = le.evento_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE tp.estado = 'APROBADO';
+BEGIN
+    FOR compra IN c_compras LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            compra.cliente || ' | ' ||
+            compra.evento || ' | $' ||
+            compra.monto_final || ' | ' ||
+            compra.metodo_pago
+        );
+    END LOOP;
+END;
+/`},
+{n:7,title:'Buscar clientes por estado',code:`DECLARE
+    CURSOR c_clientes_por_estado(
+        p_estado VARCHAR2
+    ) IS
+        SELECT cliente_id, nombre, apellido, email
+        FROM CLIENTE
+        WHERE estado = p_estado;
+BEGIN
+    FOR cliente IN c_clientes_por_estado('ACTIVO') LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            cliente.nombre || ' ' ||
+            cliente.apellido || ' | ' ||
+            cliente.email
+        );
+    END LOOP;
+END;
+/`},
+{n:8,title:'Eventos por estado',code:`DECLARE
+    CURSOR c_eventos_por_estado(
+        p_estado VARCHAR2
+    ) IS
+        SELECT evento_id, nombre, fecha, hora
+        FROM EVENTO
+        WHERE estado = p_estado;
+BEGIN
+    FOR evento IN c_eventos_por_estado('ACTIVO') LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            evento.nombre || ' | ' ||
+            evento.fecha || ' | ' ||
+            evento.hora
+        );
+    END LOOP;
+END;
+/`},
+{n:9,title:'Compras de un cliente',code:`DECLARE
+    CURSOR c_compras_cliente(
+        p_cliente_id NUMBER
+    ) IS
+        SELECT
+            c.nombre || ' ' || c.apellido AS cliente,
+            tp.transaccion_id,
+            tp.monto_final
+        FROM CLIENTE c
+        JOIN RESERVA_TEMPORAL r
+            ON r.cliente_id = c.cliente_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE c.cliente_id = p_cliente_id
+          AND tp.estado = 'APROBADO';
+BEGIN
+    FOR compra IN c_compras_cliente(1) LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            compra.cliente || ' | ' ||
+            compra.transaccion_id || ' | $' ||
+            compra.monto_final
+        );
+    END LOOP;
+END;
+/`},
+{n:10,title:'Entradas de un evento',code:`DECLARE
+    CURSOR c_ventas_evento(
+        p_evento_id NUMBER
+    ) IS
+        SELECT
+            c.nombre || ' ' || c.apellido AS cliente,
+            e.nombre AS evento,
+            tp.monto_final,
+            tp.metodo_pago
+        FROM EVENTO e
+        JOIN LOCALIDAD_EVENTO le
+            ON le.evento_id = e.evento_id
+        JOIN RESERVA_TEMPORAL r
+            ON r.localidad_evento_id = le.localidad_evento_id
+        JOIN CLIENTE c
+            ON c.cliente_id = r.cliente_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE e.evento_id = p_evento_id
+          AND tp.estado = 'APROBADO';
+BEGIN
+    FOR venta IN c_ventas_evento(1) LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            venta.cliente || ' | ' ||
+            venta.evento || ' | $' ||
+            venta.monto_final || ' | ' ||
+            venta.metodo_pago
+        );
+    END LOOP;
+END;
+/`},
+{n:11,title:'Clientes y sus compras',code:`DECLARE
+    CURSOR c_clientes IS
+        SELECT cliente_id, nombre, apellido
+        FROM CLIENTE;
+
+    CURSOR c_compras(
+        p_cliente_id NUMBER
+    ) IS
+        SELECT transaccion_id, monto_final
+        FROM RESERVA_TEMPORAL r
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE r.cliente_id = p_cliente_id
+          AND tp.estado = 'APROBADO';
+
+BEGIN
+    FOR cliente IN c_clientes LOOP
+
+        DBMS_OUTPUT.PUT_LINE(
+            'CLIENTE: ' ||
+            cliente.nombre || ' ' ||
+            cliente.apellido
+        );
+
+        FOR compra IN c_compras(cliente.cliente_id) LOOP
+            DBMS_OUTPUT.PUT_LINE(
+                '  COMPRA: ' ||
+                compra.transaccion_id ||
+                ' | $' ||
+                compra.monto_final
+            );
+        END LOOP;
+
+    END LOOP;
+END;
+/`},
+{n:12,title:'Eventos y compradores',code:`DECLARE
+    CURSOR c_eventos IS
+        SELECT evento_id, nombre
+        FROM EVENTO;
+
+    CURSOR c_compradores(
+        p_evento_id NUMBER
+    ) IS
+        SELECT
+            c.nombre || ' ' || c.apellido AS cliente,
+            tp.monto_final
+        FROM LOCALIDAD_EVENTO le
+        JOIN RESERVA_TEMPORAL r
+            ON r.localidad_evento_id = le.localidad_evento_id
+        JOIN CLIENTE c
+            ON c.cliente_id = r.cliente_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE le.evento_id = p_evento_id
+          AND tp.estado = 'APROBADO';
+
+BEGIN
+    FOR evento IN c_eventos LOOP
+
+        DBMS_OUTPUT.PUT_LINE(
+            'EVENTO: ' || evento.nombre
+        );
+
+        FOR comprador IN
+            c_compradores(evento.evento_id)
+        LOOP
+            DBMS_OUTPUT.PUT_LINE(
+                '  ' || comprador.cliente ||
+                ' | $' || comprador.monto_final
+            );
+        END LOOP;
+
+    END LOOP;
+END;
+/`}
+];
+return{
+current:0,
+slides:[
+{type:'title'},{type:'rules'},
+{type:'ex',n:1},{type:'ex',n:2},{type:'ex',n:3},{type:'ex',n:4},
+{type:'ex',n:5},{type:'ex',n:6},{type:'ex',n:7},{type:'ex',n:8},
+{type:'ex',n:9},{type:'ex',n:10},{type:'ex',n:11},{type:'ex',n:12},
+{type:'map'},
+...sols.map(x=>({type:'solution',n:x.n,title:x.title,code:x.code})),
+{type:'final'}
+]}
+},
+computed:{progress(){return ((this.current+1)/this.slides.length)*100}},
+mounted(){
+document.addEventListener('keydown',this.keys);
+this.$nextTick(()=>this.highlight());
+},
+updated(){this.$nextTick(()=>this.highlight())},
+beforeUnmount(){
+document.removeEventListener('keydown',this.keys);
+},
+methods:{
+next(){if(this.current<this.slides.length-1)this.current++},
+prev(){if(this.current>0)this.current--},
+keys(e){
+if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();this.next()}
+if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();this.prev()}
+if(e.key.toLowerCase()==='f'){
+if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
+else document.exitFullscreen?.();
+}
+if(e.key==='Home')this.current=0;
+if(e.key==='End')this.current=this.slides.length-1;
+},
+highlight(){
+if(typeof hljs==='undefined') return;
+document.querySelectorAll('pre code').forEach(el=>{
+el.removeAttribute('data-highlighted');
+hljs.highlightElement(el);
+});
+}
+}
+}).mount('#app');
+</script>
+</body>
+</html>

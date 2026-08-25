@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PL/SQL — Cursores explícitos complejos | Clon Punto Ticket</title>
+
+<!-- Vue 3 -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+<!-- Highlight.js: resaltado de sintaxis -->
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/plsql.min.js"></script>
+
+<!-- SQL Formatter: apoyo para formatear SQL/PL-SQL -->
+<script src="https://cdn.jsdelivr.net/npm/sql-formatter@15.6.2/dist/sql-formatter.min.js"></script>
+
+<style>
+:root{
+    --ink:#17171a;
+    --muted:#5e6068;
+    --paper:#ffffff;
+    --line:#dedee5;
+    --lav:#e9e2ff;
+    --blue:#dceeff;
+    --mint:#ddf5e9;
+    --peach:#ffe7d6;
+    --yellow:#fff4bf;
+    --pink:#ffe0eb;
+    --lilac:#f3edff;
+    --shadow:0 14px 35px rgba(28,25,45,.08);
+}
+
+*{box-sizing:border-box}
+html,body,#app{width:100%;height:100%;margin:0}
+body{
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    overflow:hidden;
+}
+
+.presentation{height:100%;position:relative}
+.slide{
+    position:absolute;inset:0;
+    padding:48px 72px 76px;
+    background:#fff;
+    display:none;
+    overflow:auto;
+}
+.slide.active{display:block}
+.slide-inner{max-width:1450px;margin:0 auto}
+.kicker{
+    font-size:20px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    color:#66636e;margin-bottom:14px
+}
+h1{
+    font-size:clamp(48px,5vw,82px);line-height:1.03;
+    margin:0 0 20px;font-weight:900;letter-spacing:-.045em
+}
+h2{
+    font-size:clamp(38px,4vw,62px);line-height:1.05;
+    margin:0 0 26px;font-weight:900;letter-spacing:-.035em
+}
+h3{font-size:30px;margin:0 0 12px}
+p,li{
+    font-size:25px;line-height:1.42
+}
+.small{font-size:20px!important;color:var(--muted)}
+.center{text-align:center}
+.muted{color:var(--muted)}
+strong{font-weight:900}
+mark{background:var(--yellow);padding:.08em .22em;border-radius:.25em}
+
+.hero{
+    min-height:75vh;display:flex;align-items:center;justify-content:center;
+}
+.hero-card{
+    width:min(1050px,100%);padding:56px;border-radius:34px;
+    border:1px solid var(--line);box-shadow:var(--shadow);
+    background:linear-gradient(135deg,#fff 0%,#fbf9ff 55%,#fff 100%);
+}
+.badges{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}
+.badge{
+    display:inline-flex;align-items:center;padding:10px 17px;border-radius:999px;
+    font-size:18px;font-weight:800;border:1px solid rgba(0,0,0,.07)
+}
+.b-lav{background:var(--lav)} .b-blue{background:var(--blue)}
+.b-mint{background:var(--mint)} .b-peach{background:var(--peach)}
+.b-pink{background:var(--pink)}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.card{
+    border:1px solid var(--line);border-radius:24px;padding:26px;background:#fff;
+    box-shadow:0 8px 22px rgba(20,20,30,.045)
+}
+.card.lav{background:var(--lilac)} .card.blue{background:var(--blue)}
+.card.mint{background:var(--mint)} .card.peach{background:var(--peach)}
+.card.yellow{background:var(--yellow)} .card.pink{background:var(--pink)}
+.card p,.card li{font-size:22px}
+.card ul{padding-left:25px}
+
+.flow{
+    display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+    margin:28px 0
+}
+.node{
+    padding:18px 22px;border-radius:20px;font-size:24px;font-weight:900;
+    border:1px solid var(--line);background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.05)
+}
+.arrow{font-size:34px;font-weight:900}
+
+.code-wrap{
+    border:1px solid #d5d5dc;border-radius:20px;overflow:hidden;
+    box-shadow:0 10px 24px rgba(0,0,0,.06);background:#f8f9fb
+}
+.code-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:11px 18px;background:#ececf1;border-bottom:1px solid #d8d8de;
+    font-size:16px;font-weight:900;color:#4f5058
+}
+pre{
+    margin:0!important;padding:22px!important;overflow:auto!important;
+    font-size:19px!important;line-height:1.48!important;
+    max-height:55vh;
+}
+code{font-family:"JetBrains Mono","SFMono-Regular",Consolas,monospace}
+.code-focus{background:#fff7cc;border-left:5px solid #e8c94a;padding-left:14px}
+
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}
+table{width:100%;border-collapse:collapse;font-size:20px;background:#fff}
+th,td{padding:13px 15px;text-align:left;border-bottom:1px solid #e7e7eb}
+th{background:#f2f0f6;font-size:18px}
+tr:last-child td{border-bottom:0}
+.pill{
+    display:inline-block;padding:5px 10px;border-radius:999px;font-weight:800;font-size:15px
+}
+.ok{background:var(--mint)} .no{background:var(--pink)} .warn{background:var(--yellow)}
+
+.diagram{
+    border:2px dashed #c9c5d4;border-radius:24px;padding:24px;background:#fcfbff
+}
+.entity{
+    display:inline-flex;flex-direction:column;min-width:190px;
+    border:2px solid #2c2c31;border-radius:16px;background:#fff;overflow:hidden;
+    vertical-align:middle
+}
+.entity-title{padding:12px 15px;font-weight:900;background:var(--lav);font-size:20px}
+.entity-body{padding:12px 15px;font-size:17px;line-height:1.5}
+.entity-body b{font-size:16px}
+.rel{display:inline-block;font-size:32px;font-weight:900;padding:10px}
+
+.note{
+    margin-top:20px;padding:18px 22px;border-radius:18px;
+    background:var(--yellow);border-left:7px solid #d9bc35;font-size:21px;line-height:1.4
+}
+.question{
+    font-size:34px;font-weight:900;line-height:1.25;
+    padding:30px;border-radius:25px;background:var(--blue);border:1px solid #bfd9ef
+}
+.answer{margin-top:18px;padding:20px;border-radius:18px;background:var(--mint);font-size:24px}
+.reveal{animation:reveal .28s ease}
+@keyframes reveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+.topbar{
+    position:fixed;left:0;right:0;top:0;height:6px;background:#eee;z-index:20
+}
+.progress{height:100%;background:#b8a7e8;transition:width .25s}
+.footer{
+    position:fixed;left:0;right:0;bottom:0;height:52px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 24px;background:rgba(255,255,255,.94);
+    border-top:1px solid var(--line);z-index:20;font-size:16px;font-weight:800
+}
+.controls{display:flex;gap:8px;align-items:center}
+button{
+    border:1px solid #cfcfd7;background:#fff;border-radius:12px;
+    padding:8px 13px;font-size:16px;font-weight:900;cursor:pointer
+}
+button:hover{background:#f3f1f8}
+kbd{
+    border:1px solid #cfcfd7;border-bottom-width:3px;border-radius:6px;
+    padding:2px 7px;background:#fff;font-family:inherit
+}
+.two-col{display:grid;grid-template-columns:1.05fr .95fr;gap:28px;align-items:start}
+.big-number{
+    width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:30px;font-weight:900;background:var(--lav);margin-bottom:16px
+}
+.quote{
+    font-size:34px;line-height:1.25;font-weight:900;padding:34px;
+    border-left:8px solid #b8a7e8;background:#faf8ff;border-radius:0 24px 24px 0
+}
+
+@media(max-width:900px){
+    .slide{padding:35px 28px 80px}
+    .grid,.grid3,.two-col{grid-template-columns:1fr}
+    p,li{font-size:20px} h1{font-size:46px} h2{font-size:40px}
+    pre{font-size:15px!important}
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+<div class="presentation" @keydown="handleKey" tabindex="0">
+
+<div class="topbar"><div class="progress" :style="{width: progress+'%'}"></div></div>
+
+<section v-for="(slide,index) in slides" :key="index"
+         class="slide" :class="{active:index===current}">
+<div class="slide-inner reveal" :key="current">
+
+<!-- 01 -->
+<template v-if="slide.type==='title'">
+<div class="hero">
+<div class="hero-card">
+<div class="kicker">BDY1103 · PL/SQL · Oracle 19c</div>
+<h1>Cursores explícitos<br>complejos</h1>
+<p style="font-size:30px;max-width:900px">Del <mark>FOR LOOP</mark> que ya conocen a consultas con JOIN, parámetros y cursores anidados.</p>
+<div class="badges">
+<span class="badge b-lav">Clon Punto Ticket</span>
+<span class="badge b-blue">Aprendizaje progresivo</span>
+<span class="badge b-mint">Ejemplos reales</span>
+<span class="badge b-peach">DUA</span>
+</div>
+<p class="small">Navegación: <kbd>←</kbd> <kbd>→</kbd> · pantalla completa: <kbd>F</kbd></p>
+</div>
+</div>
+</template>
+
+<!-- 02 -->
+<template v-if="slide.type==='agenda'">
+<div class="kicker">01 · Ruta de aprendizaje</div>
+<h2>¿Qué vamos a construir hoy?</h2>
+<div class="grid3">
+<div class="card lav"><div class="big-number">1</div><h3>Recordar</h3><p>Qué hace realmente un cursor explícito y por qué <b>FOR LOOP</b> simplifica su uso.</p></div>
+<div class="card blue"><div class="big-number">2</div><h3>Complejizar</h3><p>Agregar <b>JOIN</b>, filtros y alias para trabajar con resultados de varias tablas.</p></div>
+<div class="card mint"><div class="big-number">3</div><h3>Parametrizar</h3><p>Crear cursores reutilizables que reciben valores desde el bloque PL/SQL.</p></div>
+<div class="card peach"><div class="big-number">4</div><h3>Anidar</h3><p>Recorrer clientes y, para cada cliente, recorrer sus transacciones.</p></div>
+<div class="card yellow"><div class="big-number">5</div><h3>Controlar</h3><p>Entender la diferencia entre <b>FOR</b> y <b>OPEN / FETCH / CLOSE</b>.</p></div>
+<div class="card pink"><div class="big-number">6</div><h3>Aplicar</h3><p>Resolver un caso del sistema de venta de entradas.</p></div>
+</div>
+</template>
+
+<!-- 03 -->
+<template v-if="slide.type==='prior'">
+<div class="kicker">02 · Conexión con la clase anterior</div>
+<h2>Ustedes ya saben hacer esto</h2>
+<div class="two-col">
+<div>
+<div class="code-wrap">
+<div class="code-head"><span>cursor básico</span><span>PL/SQL</span></div>
+<pre><code class="language-plsql">DECLARE
+    CURSOR c_clientes IS
+        SELECT *
+        FROM CLIENTE;
+BEGIN
+    FOR un_cliente IN c_clientes LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            'Cliente: ' || un_cliente.NOMBRE
+        );
+    END LOOP;
+END;
+/</code></pre>
+</div>
+</div>
+<div class="card lav">
+<h3>La idea clave</h3>
+<p><b>c_clientes</b> representa el conjunto de filas que devuelve el SELECT.</p>
+<p><b>un_cliente</b> representa una fila del resultado durante cada vuelta.</p>
+<p>Oracle abre, obtiene, recorre y cierra el cursor automáticamente cuando usamos el <b>FOR LOOP</b>.</p>
+</div>
+</div>
+</template>
+
+<!-- 04 -->
+<template v-if="slide.type==='mental'">
+<div class="kicker">03 · Modelo mental</div>
+<h2>¿Qué ocurre dentro del FOR?</h2>
+<div class="flow">
+<div class="node b-lav">SELECT → resultado</div><div class="arrow">→</div>
+<div class="node b-blue">1 fila</div><div class="arrow">→</div>
+<div class="node b-mint">registro</div><div class="arrow">→</div>
+<div class="node b-peach">LOOP</div><div class="arrow">→</div>
+<div class="node b-yellow">siguiente fila</div>
+</div>
+<div class="diagram">
+<div class="grid3">
+<div class="card"><h3>1. Abrir</h3><p>Oracle prepara el cursor para comenzar a recorrer el resultado.</p></div>
+<div class="card"><h3>2. Obtener</h3><p>Obtiene una fila y la coloca en el registro implícito del <b>FOR</b>.</p></div>
+<div class="card"><h3>3. Repetir</h3><p>Cuando no quedan filas, el ciclo termina y Oracle cierra el cursor.</p></div>
+</div>
+</div>
+<div class="note"><b>Pregunta para el curso:</b> si el SELECT puede tener JOIN, WHERE, GROUP BY u ORDER BY, ¿por qué el cursor no podría?</div>
+</template>
+
+<!-- 05 -->
+<template v-if="slide.type==='schema'">
+<div class="kicker">04 · Nuestra base de datos</div>
+<h2>El cursor no vive aislado</h2>
+<p>En el clon Punto Ticket, una compra conecta varias entidades. Eso nos permite construir cursores mucho más interesantes.</p>
+<div class="diagram center">
+<span class="entity"><span class="entity-title">CLIENTE</span><span class="entity-body"><b>cliente_id</b><br>nombre<br>apellido<br>email</span></span>
+<span class="rel">→</span>
+<span class="entity"><span class="entity-title">RESERVA_TEMPORAL</span><span class="entity-body"><b>reserva_id</b><br>cliente_id<br>localidad_evento_id<br>estado</span></span>
+<span class="rel">→</span>
+<span class="entity"><span class="entity-title">TRANSACCION_PAGO</span><span class="entity-body"><b>transaccion_id</b><br>reserva_id<br>monto_final<br>estado</span></span>
+<span class="rel">→</span>
+<span class="entity"><span class="entity-title">TICKET</span><span class="entity-body"><b>ticket_id</b><br>codigo_ticket<br>precio_pagado<br>estado</span></span>
+</div>
+<div class="note">Esta cadena será nuestra ruta principal para practicar cursores con <b>JOIN</b>.</div>
+</template>
+
+<!-- 06 -->
+<template v-if="slide.type==='simplejoin'">
+<div class="kicker">05 · Nivel 3</div>
+<h2>Cursor + JOIN: el primer salto</h2>
+<div class="two-col">
+<div class="code-wrap">
+<div class="code-head"><span>transacciones aprobadas</span><span>3 tablas</span></div>
+<pre><code class="language-plsql">DECLARE
+    CURSOR c_transacciones IS
+        SELECT
+            c.nombre,
+            c.apellido,
+            tp.monto_bruto,
+            tp.descuento,
+            tp.monto_final,
+            tp.estado
+        FROM CLIENTE c
+        JOIN RESERVA_TEMPORAL r
+            ON r.cliente_id = c.cliente_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE tp.estado = 'APROBADO';
+
+BEGIN
+    FOR una_transaccion IN c_transacciones LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            una_transaccion.nombre || ' ' ||
+            una_transaccion.apellido || ' → $' ||
+            una_transaccion.monto_final
+        );
+    END LOOP;
+END;
+/</code></pre>
+</div>
+<div>
+<div class="card mint"><h3>¿Qué devuelve cada fila?</h3>
+<ul>
+<li>Nombre y apellido del cliente</li>
+<li>Monto bruto</li>
+<li>Descuento</li>
+<li>Monto final</li>
+<li>Estado del pago</li>
+</ul></div>
+<div class="card lav"><h3>Idea importante</h3><p>El cursor trabaja sobre el <b>resultado del SELECT</b>, no sobre una tabla específica.</p></div>
+</div>
+</div>
+</template>
+
+<!-- 07 -->
+<template v-if="slide.type==='result'">
+<div class="kicker">06 · Visualización</div>
+<h2>Una fila del cursor se ve así</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>NOMBRE</th><th>APELLIDO</th><th>MONTO_BRUTO</th><th>DESCUENTO</th><th>MONTO_FINAL</th><th>ESTADO</th></tr></thead>
+<tbody>
+<tr><td>Valentina</td><td>Soto</td><td>$149.900</td><td>$29.980</td><td><b>$119.920</b></td><td><span class="pill ok">APROBADO</span></td></tr>
+<tr><td>Diego</td><td>Morales</td><td>$149.900</td><td>$0</td><td><b>$149.900</b></td><td><span class="pill ok">APROBADO</span></td></tr>
+<tr><td>Antonia</td><td>Pérez</td><td>$129.900</td><td>$19.485</td><td><b>$110.415</b></td><td><span class="pill ok">APROBADO</span></td></tr>
+<tr><td>Sebastián</td><td>Vargas</td><td>$69.900</td><td>$6.990</td><td><b>$62.910</b></td><td><span class="pill ok">APROBADO</span></td></tr>
+</tbody>
+</table>
+</div>
+<div class="flow">
+<div class="node b-lav">SELECT</div><div class="arrow">→</div>
+<div class="node b-blue">4 filas</div><div class="arrow">→</div>
+<div class="node b-mint">una_transaccion</div><div class="arrow">→</div>
+<div class="node b-peach">1 vuelta por fila</div>
+</div>
+<p class="small">Datos basados en los registros de ejemplo incluidos en el esquema proporcionado.</p>
+</template>
+
+<!-- 08 -->
+<template v-if="slide.type==='record'">
+<div class="kicker">07 · Registro implícito</div>
+<h2>¿Qué es <code>una_transaccion</code>?</h2>
+<div class="quote">“Una fila del resultado del cursor, disponible como un registro durante la iteración.”</div>
+<div class="grid">
+<div class="card blue"><h3>Sus campos</h3>
+<p><code>una_transaccion.NOMBRE</code></p>
+<p><code>una_transaccion.MONTO_FINAL</code></p>
+<p><code>una_transaccion.ESTADO</code></p></div>
+<div class="card mint"><h3>¿Tengo que declarar el tipo?</h3><p><b>No.</b> En un cursor FOR LOOP, PL/SQL crea automáticamente un registro con los campos que devuelve el cursor.</p></div>
+</div>
+<div class="note">Regla mental: <b>SELECT define las columnas → cursor define el conjunto → registro representa una fila.</b></div>
+</template>
+
+<!-- 09 -->
+<template v-if="slide.type==='levels'">
+<div class="kicker">08 · Progresión</div>
+<h2>¿Qué hace “complejo” a un cursor?</h2>
+<div class="grid">
+<div class="card lav"><h3>Nivel 1</h3><p><b>Una tabla</b></p><code>SELECT * FROM CLIENTE</code></div>
+<div class="card blue"><h3>Nivel 2</h3><p><b>Condiciones</b></p><code>WHERE estado = '...'</code></div>
+<div class="card mint"><h3>Nivel 3</h3><p><b>JOIN</b></p><code>CLIENTE → RESERVA → PAGO</code></div>
+<div class="card peach"><h3>Nivel 4</h3><p><b>Parámetros</b></p><code>c_clientes(p_estado)</code></div>
+<div class="card yellow"><h3>Nivel 5</h3><p><b>JOIN + parámetros</b></p><code>c_pagos(p_cliente_id)</code></div>
+<div class="card pink"><h3>Nivel 6</h3><p><b>Cursores anidados</b></p><code>cliente → sus pagos</code></div>
+</div>
+<div class="note">No es una clasificación oficial de Oracle llamada “cursor complejo”. Es una forma pedagógica de visualizar la progresión de dificultad.</div>
+</template>
+
+<!-- 10 -->
+<template v-if="slide.type==='params'">
+<div class="kicker">09 · Nivel 4</div>
+<h2>Cursor con parámetros</h2>
+<div class="two-col">
+<div class="code-wrap">
+<div class="code-head"><span>reutilizable</span><span>PL/SQL</span></div>
+<pre><code class="language-plsql">DECLARE
+    CURSOR c_clientes_por_estado(
+        p_estado VARCHAR2
+    ) IS
+        SELECT
+            cliente_id,
+            nombre,
+            apellido,
+            email
+        FROM CLIENTE
+        WHERE estado = p_estado;
+
+BEGIN
+    FOR un_cliente IN
+        c_clientes_por_estado('ACTIVO')
+    LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            un_cliente.nombre
+        );
+    END LOOP;
+END;
+/</code></pre>
+</div>
+<div class="card lav">
+<h3>¿Qué cambió?</h3>
+<p>El cursor ya no está “amarrado” a un único valor.</p>
+<p><code>p_estado</code> recibe información desde el lugar donde invocamos el cursor.</p>
+<p>El cursor se vuelve <b>reutilizable</b>.</p>
+</div>
+</div>
+</template>
+
+<!-- 11 -->
+<template v-if="slide.type==='paramvisual'">
+<div class="kicker">10 · Parámetros</div>
+<h2>El cursor es el mismo; cambia el dato</h2>
+<div class="flow">
+<div class="node b-lav">c_clientes_por_estado</div>
+<div class="arrow">→</div>
+<div class="node b-blue">('ACTIVO')</div>
+<div class="arrow">→</div>
+<div class="node b-mint">resultado A</div>
+</div>
+<div class="flow">
+<div class="node b-lav">c_clientes_por_estado</div>
+<div class="arrow">→</div>
+<div class="node b-peach">('INACTIVO')</div>
+<div class="arrow">→</div>
+<div class="node b-yellow">resultado B</div>
+</div>
+<div class="card mint center">
+<h3>Una sola definición</h3>
+<p>La consulta se define una vez. El parámetro permite cambiar el criterio de búsqueda.</p>
+</div>
+</template>
+
+<!-- 12 -->
+<template v-if="slide.type==='case'">
+<div class="kicker">11 · Caso de negocio</div>
+<h2>Pregunta profesional</h2>
+<div class="question">“Quiero obtener las compras aprobadas de un cliente específico. ¿Cómo hacemos que el cursor reciba el <code>CLIENTE_ID</code>?”</div>
+<div class="flow">
+<div class="node b-lav">CLIENTE_ID</div><div class="arrow">→</div>
+<div class="node b-blue">cursor parametrizado</div><div class="arrow">→</div>
+<div class="node b-mint">JOIN</div><div class="arrow">→</div>
+<div class="node b-peach">pagos aprobados</div>
+</div>
+<div class="note"><b>Piensa antes de mirar la solución:</b> ¿dónde colocarías el parámetro en el SELECT?</div>
+</template>
+
+<!-- 13 -->
+<template v-if="slide.type==='paramjoin'">
+<div class="kicker">12 · Nivel 5</div>
+<h2>JOIN + parámetro</h2>
+<div class="code-wrap">
+<div class="code-head"><span>compras aprobadas de un cliente</span><span>CLON PUNTO TICKET</span></div>
+<pre><code class="language-plsql">DECLARE
+
+    CURSOR c_compras_cliente(
+        p_cliente_id NUMBER
+    ) IS
+        SELECT
+            c.nombre,
+            c.apellido,
+            e.nombre AS evento,
+            tp.monto_bruto,
+            tp.descuento,
+            tp.monto_final,
+            tp.metodo_pago
+        FROM CLIENTE c
+        JOIN RESERVA_TEMPORAL r
+            ON r.cliente_id = c.cliente_id
+        JOIN LOCALIDAD_EVENTO le
+            ON le.localidad_evento_id = r.localidad_evento_id
+        JOIN EVENTO e
+            ON e.evento_id = le.evento_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE tp.estado = 'APROBADO'
+          AND c.cliente_id = p_cliente_id;
+
+BEGIN
+
+    FOR una_compra IN c_compras_cliente(1) LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            una_compra.nombre || ' ' ||
+            una_compra.apellido || ' → ' ||
+            una_compra.evento || ' → $' ||
+            una_compra.monto_final
+        );
+    END LOOP;
+
+END;
+/</code></pre>
+</div>
+<div class="note">Observa la separación: <b>p_cliente_id</b> controla qué cliente buscamos; los <b>JOIN</b> determinan cómo llegamos desde el cliente hasta su compra.</div>
+</template>
+
+<!-- 14 -->
+<template v-if="slide.type==='ticketpath'">
+<div class="kicker">13 · Seguir el dato</div>
+<h2>¿Cómo llega el CLIENTE_ID hasta el pago?</h2>
+<div class="flow">
+<div class="node b-lav">CLIENTE</div><div class="arrow">→</div>
+<div class="node b-blue">RESERVA_TEMPORAL</div><div class="arrow">→</div>
+<div class="node b-mint">LOCALIDAD_EVENTO</div><div class="arrow">→</div>
+<div class="node b-peach">EVENTO</div>
+</div>
+<div class="flow">
+<div class="node b-lav">RESERVA_TEMPORAL</div><div class="arrow">→</div>
+<div class="node b-yellow">TRANSACCION_PAGO</div>
+</div>
+<div class="card">
+<p><b>Clave pedagógica:</b> antes de escribir un cursor con JOIN, dibuja el camino de las claves foráneas. El diagrama ER se convierte en una guía para construir el SELECT.</p>
+</div>
+</template>
+
+<!-- 15 -->
+<template v-if="slide.type==='nested'">
+<div class="kicker">14 · Nivel 6</div>
+<h2>Cursor dentro de cursor</h2>
+<div class="two-col">
+<div class="code-wrap">
+<div class="code-head"><span>cliente → compras</span><span>anidación</span></div>
+<pre><code class="language-plsql">DECLARE
+
+    CURSOR c_clientes IS
+        SELECT cliente_id, nombre, apellido
+        FROM CLIENTE;
+
+    CURSOR c_compras(
+        p_cliente_id NUMBER
+    ) IS
+        SELECT
+            tp.transaccion_id,
+            tp.monto_final,
+            tp.metodo_pago
+        FROM RESERVA_TEMPORAL r
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE r.cliente_id = p_cliente_id
+          AND tp.estado = 'APROBADO';
+
+BEGIN
+
+    FOR un_cliente IN c_clientes LOOP
+
+        DBMS_OUTPUT.PUT_LINE(
+            'CLIENTE: ' ||
+            un_cliente.nombre
+        );
+
+        FOR una_compra IN
+            c_compras(un_cliente.cliente_id)
+        LOOP
+            DBMS_OUTPUT.PUT_LINE(
+                '  COMPRA: $' ||
+                una_compra.monto_final
+            );
+        END LOOP;
+
+    END LOOP;
+
+END;
+/</code></pre>
+</div>
+<div class="card mint">
+<h3>La idea</h3>
+<p>El primer cursor decide <b>quién</b>.</p>
+<p>El segundo cursor decide <b>qué compras pertenecen a esa persona</b>.</p>
+<p>El parámetro conecta ambos niveles.</p>
+</div>
+</div>
+</template>
+
+<!-- 16 -->
+<template v-if="slide.type==='nestedvisual'">
+<div class="kicker">15 · Modelo mental</div>
+<h2>Piensa en una estructura de árbol</h2>
+<div class="diagram">
+<div class="flow"><div class="node b-lav">Valentina Soto</div></div>
+<div class="flow">
+<div class="arrow">↓</div>
+</div>
+<div class="flow">
+<div class="node b-blue">Compra $119.920</div>
+<div class="node b-blue">Compra ...</div>
+</div>
+<div class="flow"><div class="arrow">↓</div></div>
+<div class="flow">
+<div class="node b-mint">Ticket TKT-BB-2026-000001</div>
+</div>
+</div>
+<div class="grid">
+<div class="card peach"><h3>Cursor externo</h3><p>Recorre clientes.</p></div>
+<div class="card yellow"><h3>Cursor interno</h3><p>Recorre las compras del cliente actual.</p></div>
+</div>
+</template>
+
+<!-- 17 -->
+<template v-if="slide.type==='manual'">
+<div class="kicker">16 · Control manual</div>
+<h2>FOR LOOP vs OPEN / FETCH / CLOSE</h2>
+<div class="grid">
+<div class="card mint">
+<h3>FOR LOOP</h3>
+<div class="code-wrap"><pre><code class="language-plsql">FOR un_cliente IN c_clientes LOOP
+    DBMS_OUTPUT.PUT_LINE(
+        un_cliente.nombre
+    );
+END LOOP;</code></pre></div>
+<p>Oracle administra el ciclo del cursor.</p>
+</div>
+<div class="card peach">
+<h3>Manual</h3>
+<div class="code-wrap"><pre><code class="language-plsql">OPEN c_clientes;
+
+FETCH c_clientes
+INTO v_cliente;
+
+CLOSE c_clientes;</code></pre></div>
+<p>El programador controla cada operación.</p>
+</div>
+</div>
+<div class="note">Mayor control significa también mayor responsabilidad: debes controlar correctamente la lectura, el fin del conjunto y el cierre.</div>
+</template>
+
+<!-- 18 -->
+<template v-if="slide.type==='fetchloop'">
+<div class="kicker">17 · Ciclo manual</div>
+<h2>¿Qué significa FETCH?</h2>
+<div class="flow">
+<div class="node b-lav">OPEN</div><div class="arrow">→</div>
+<div class="node b-blue">FETCH</div><div class="arrow">→</div>
+<div class="node b-mint">fila actual</div><div class="arrow">→</div>
+<div class="node b-blue">FETCH</div><div class="arrow">→</div>
+<div class="node b-peach">...</div><div class="arrow">→</div>
+<div class="node b-yellow">CLOSE</div>
+</div>
+<div class="card">
+<p><b>OPEN:</b> inicia el cursor.</p>
+<p><b>FETCH:</b> trae una fila del resultado y la coloca en una variable/registro.</p>
+<p><b>CLOSE:</b> libera el cursor.</p>
+</div>
+</template>
+
+<!-- 19 -->
+<template v-if="slide.type==='rowtype'">
+<div class="kicker">18 · Complemento técnico</div>
+<h2>%ROWTYPE: representar una fila</h2>
+<div class="two-col">
+<div class="code-wrap">
+<div class="code-head"><span>fila de CLIENTE</span><span>Oracle</span></div>
+<pre><code class="language-plsql">DECLARE
+
+    v_cliente CLIENTE%ROWTYPE;
+
+BEGIN
+
+    SELECT *
+    INTO v_cliente
+    FROM CLIENTE
+    WHERE cliente_id = 1;
+
+    DBMS_OUTPUT.PUT_LINE(
+        v_cliente.nombre
+    );
+
+END;
+/</code></pre>
+</div>
+<div class="card lav">
+<h3>¿Qué aporta?</h3>
+<p><code>CLIENTE%ROWTYPE</code> crea una variable con la estructura de una fila de la tabla <b>CLIENTE</b>.</p>
+<p>Es especialmente útil cuando necesitamos manejar una fila completa fuera del registro implícito del FOR.</p>
+</div>
+</div>
+</template>
+
+<!-- 20 -->
+<template v-if="slide.type==='attributes'">
+<div class="kicker">19 · Control del cursor</div>
+<h2>Atributos que aparecerán después</h2>
+<div class="grid3">
+<div class="card blue"><h3>%FOUND</h3><p>Indica si la última operación de FETCH obtuvo una fila.</p></div>
+<div class="card peach"><h3>%NOTFOUND</h3><p>Indica que no se obtuvo una fila.</p></div>
+<div class="card mint"><h3>%ROWCOUNT</h3><p>Indica cuántas filas se han obtenido hasta ese momento.</p></div>
+</div>
+<div class="note">En el enfoque con <b>FOR registro IN cursor LOOP</b>, gran parte de esta administración ya la realiza Oracle por nosotros. Aquí importa entender el concepto para avanzar hacia el control manual.</div>
+</template>
+
+<!-- 21 -->
+<template v-if="slide.type==='exercise'">
+<div class="kicker">20 · Actividad guiada</div>
+<h2>Desafío: “Panel de compras”</h2>
+<div class="question">Construye un cursor parametrizado que reciba un <code>CLIENTE_ID</code> y muestre sus compras aprobadas.</div>
+<div class="grid">
+<div class="card lav"><h3>Debe mostrar</h3><ul><li>Cliente</li><li>Evento</li><li>Localidad</li><li>Método de pago</li><li>Monto bruto</li><li>Descuento</li><li>Monto final</li></ul></div>
+<div class="card blue"><h3>Condiciones</h3><ul><li>Usar cursor explícito</li><li>Usar parámetro</li><li>Usar JOIN</li><li>Filtrar <code>APROBADO</code></li><li>Recorrer con FOR LOOP</li></ul></div>
+</div>
+<div class="note"><b>Pista:</b> parte desde CLIENTE → RESERVA_TEMPORAL → LOCALIDAD_EVENTO → EVENTO y conecta RESERVA_TEMPORAL → TRANSACCION_PAGO.</div>
+</template>
+
+<!-- 22 -->
+<template v-if="slide.type==='solution'">
+<div class="kicker">21 · Solución de referencia</div>
+<h2>Una solución posible</h2>
+<div class="code-wrap">
+<div class="code-head"><span>panel de compras</span><span>PL/SQL</span></div>
+<pre><code class="language-plsql">DECLARE
+
+    CURSOR c_compras(
+        p_cliente_id NUMBER
+    ) IS
+        SELECT
+            c.nombre || ' ' || c.apellido AS cliente,
+            e.nombre AS evento,
+            le.nombre_localidad,
+            tp.metodo_pago,
+            tp.monto_bruto,
+            tp.descuento,
+            tp.monto_final
+        FROM CLIENTE c
+        JOIN RESERVA_TEMPORAL r
+            ON r.cliente_id = c.cliente_id
+        JOIN LOCALIDAD_EVENTO le
+            ON le.localidad_evento_id = r.localidad_evento_id
+        JOIN EVENTO e
+            ON e.evento_id = le.evento_id
+        JOIN TRANSACCION_PAGO tp
+            ON tp.reserva_id = r.reserva_id
+        WHERE c.cliente_id = p_cliente_id
+          AND tp.estado = 'APROBADO';
+
+BEGIN
+
+    FOR compra IN c_compras(1) LOOP
+        DBMS_OUTPUT.PUT_LINE(
+            compra.cliente || ' | ' ||
+            compra.evento || ' | ' ||
+            compra.nombre_localidad || ' | $' ||
+            compra.monto_final
+        );
+    END LOOP;
+
+END;
+/</code></pre>
+</div>
+</template>
+
+<!-- 23 -->
+<template v-if="slide.type==='mistakes'">
+<div class="kicker">22 · Errores frecuentes</div>
+<h2>Antes de ejecutar, revisa esto</h2>
+<div class="grid">
+<div class="card pink"><h3>1 · Alias incorrecto</h3><p>Usar <code>tp.estado</code> en el SELECT sin haber definido <code>TRANSACCION_PAGO tp</code>.</p></div>
+<div class="card peach"><h3>2 · JOIN incorrecto</h3><p>Conectar tablas por columnas que no representan la relación real.</p></div>
+<div class="card yellow"><h3>3 · Parámetro mal ubicado</h3><p>El parámetro debe participar en la condición del SELECT cuando queremos filtrar por él.</p></div>
+<div class="card blue"><h3>4 · Confundir fila con cursor</h3><p><code>c_compras</code> es el cursor; <code>compra</code> es una fila actual.</p></div>
+</div>
+</template>
+
+<!-- 24 -->
+<template v-if="slide.type==='summary'">
+<div class="kicker">23 · Cierre conceptual</div>
+<h2>La idea que debes llevarte</h2>
+<div class="grid">
+<div class="card lav"><h3>Cursor</h3><p>Representa un conjunto de filas que queremos recorrer desde PL/SQL.</p></div>
+<div class="card blue"><h3>JOIN</h3><p>Permite que ese conjunto combine información de varias tablas.</p></div>
+<div class="card mint"><h3>Parámetro</h3><p>Hace que el cursor sea reutilizable y dependiente de un dato externo.</p></div>
+<div class="card peach"><h3>Anidación</h3><p>Permite recorrer una jerarquía: cliente → compras → detalle.</p></div>
+<div class="card yellow"><h3>FOR LOOP</h3><p>Automatiza OPEN, FETCH y CLOSE para este patrón de recorrido.</p></div>
+<div class="card pink"><h3>OPEN/FETCH/CLOSE</h3><p>Entrega control manual cuando realmente lo necesitamos.</p></div>
+</div>
+</template>
+
+<!-- 25 -->
+<template v-if="slide.type==='exit'">
+<div class="hero">
+<div class="hero-card">
+<div class="kicker">24 · Ticket de salida</div>
+<h2>Comprueba tu comprensión</h2>
+<div class="question">¿Por qué un cursor con parámetros puede ser más útil que escribir una consulta diferente para cada cliente?</div>
+<div class="grid" style="margin-top:22px">
+<div class="card lav"><h3>A</h3><p>Porque elimina los JOIN.</p></div>
+<div class="card mint"><h3>B</h3><p>Porque permite reutilizar la misma definición cambiando el valor recibido.</p></div>
+<div class="card peach"><h3>C</h3><p>Porque reemplaza las claves primarias.</p></div>
+<div class="card blue"><h3>D</h3><p>Porque evita ejecutar el SELECT.</p></div>
+</div>
+<div class="answer"><b>Respuesta:</b> B. El parámetro permite reutilizar el cursor y cambiar dinámicamente el criterio de búsqueda.</div>
+</div>
+</div>
+</template>
+
+</div>
+</section>
+
+<div class="footer">
+<div>PL/SQL · Cursores explícitos complejos · Clon Punto Ticket</div>
+<div class="controls">
+<button @click="prev">← Anterior</button>
+<span>{{current+1}} / {{slides.length}}</span>
+<button @click="next">Siguiente →</button>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data(){
+        return {
+            current:0,
+            slides:[
+                {type:'title'},{type:'agenda'},{type:'prior'},{type:'mental'},
+                {type:'schema'},{type:'simplejoin'},{type:'result'},{type:'record'},
+                {type:'levels'},{type:'params'},{type:'paramvisual'},{type:'case'},
+                {type:'paramjoin'},{type:'ticketpath'},{type:'nested'},{type:'nestedvisual'},
+                {type:'manual'},{type:'fetchloop'},{type:'rowtype'},{type:'attributes'},
+                {type:'exercise'},{type:'solution'},{type:'mistakes'},{type:'summary'},
+                {type:'exit'}
+            ]
+        }
+    },
+    computed:{
+        progress(){ return ((this.current+1)/this.slides.length)*100 }
+    },
+    mounted(){
+        this.$el.querySelector('.presentation').focus();
+        document.addEventListener('keydown', this.handleKey);
+        this.highlight();
+    },
+    updated(){
+        this.$nextTick(()=>this.highlight());
+    },
+    methods:{
+        next(){
+            if(this.current < this.slides.length-1) this.current++;
+        },
+        prev(){
+            if(this.current > 0) this.current--;
+        },
+        handleKey(e){
+            if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+            if(e.key==='ArrowRight' || e.key==='PageDown' || e.key===' '){
+                e.preventDefault(); this.next();
+            }
+            if(e.key==='ArrowLeft' || e.key==='PageUp'){
+                e.preventDefault(); this.prev();
+            }
+            if(e.key.toLowerCase()==='f'){
+                if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+                else document.exitFullscreen?.();
+            }
+            if(e.key==='Home') this.current=0;
+            if(e.key==='End') this.current=this.slides.length-1;
+        },
+        highlight(){
+            document.querySelectorAll('pre code').forEach(el=>{
+                if(!el.dataset.hljs) {
+                    hljs.highlightElement(el);
+                    el.dataset.hljs='1';
+                }
+            });
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
